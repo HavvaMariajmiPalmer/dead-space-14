@@ -423,3 +423,10 @@ Entries:
   changes:
   - type: Fix
     message: Звук эмоций некроморфов стал тише.
+- id: 30
+  author: KloopRE
+  time: '2026-01-19T12:35:18.138390+00:00'
+  pr: 967
+  changes:
+  - type: Add
+    message: Test
