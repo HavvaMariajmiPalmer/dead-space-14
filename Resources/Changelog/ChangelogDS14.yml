@@ -430,3 +430,12 @@ Entries:
   changes:
   - type: Add
     message: Test
+- id: 31
+  author: Djentelmen2
+  time: '2026-01-19T12:53:12.654056+00:00'
+  pr: 935
+  changes:
+  - type: Tweak
+    message: Теперь разумный вирус - мидраундовый антагонист. *АПЧХИ*
+  - type: Tweak
+    message: Шанс вирусных событий повышен.
