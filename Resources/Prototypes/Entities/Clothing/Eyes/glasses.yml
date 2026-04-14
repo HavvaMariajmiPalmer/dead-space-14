@@ -302,9 +302,9 @@
   description: An advanced visor protecting a ninja's eyes from flashing lights.
   components:
   - type: Sprite
-    sprite: Clothing/Eyes/Glasses/ninjavisor.rsi
+    sprite: _DeadSpace/Clothing/Eyes/Glasses/ninjavisor.rsi # DS14
   - type: Clothing
-    sprite: Clothing/Eyes/Glasses/ninjavisor.rsi
+    sprite: _DeadSpace/Clothing/Eyes/Glasses/ninjavisor.rsi # DS14
   - type: FlashImmunity
   - type: PNV # DS14
     activateSound: 
