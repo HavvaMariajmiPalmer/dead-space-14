@@ -233,9 +233,9 @@
   id: ClothingHeadHelmetHardsuitSeniorSalvage
   components:
   - type: Sprite
-    sprite: Clothing/Head/Hardsuits/salvage.rsi
+    sprite: _DeadSpace/Clothing/Head/Hardsuits/senior_salvage.rsi # DS14
   - type: Clothing
-    sprite: Clothing/Head/Hardsuits/salvage.rsi
+    sprite: _DeadSpace/Clothing/Head/Hardsuits/senior_salvage.rsi # DS14
 
 #Goliath Hardsuit
 - type: entity
@@ -320,6 +320,9 @@
         Slash: 0.9
         Piercing: 0.9
         Heat: 0.9
+  - type: PointLight # DS14
+    radius: 7 # DS14
+    energy: 3 # DS14
 
 #Security Hardsuit
 - type: entity
