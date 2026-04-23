@@ -371,7 +371,7 @@
   name: loadout-group-chef-hand
   minLimit: 0
   loadouts:
-  - ChefGoldenKnife
+ ## - ChefGoldenKnife ##DS14
   - CaseChefGoldenKnife ##DS14
   - BriefcaseKitchenKnife ##DS14
 
