@@ -372,6 +372,8 @@
   minLimit: 0
   loadouts:
   - ChefGoldenKnife
+  - CaseChefGoldenKnife ##DS14
+  - BriefcaseKitchenKnife ##DS14
 
 - type: loadoutGroup
   id: ChefGloves
