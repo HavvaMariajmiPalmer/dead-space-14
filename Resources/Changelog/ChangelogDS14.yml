@@ -1625,3 +1625,16 @@ Entries:
   changes:
   - type: Add
     message: Привязка звука погоды к настройке звука "громкость окружения".
+- id: 151
+  author: sastr457
+  time: '2026-05-20T19:52:40.596126+00:00'
+  pr: 1448
+  changes:
+  - type: Add
+    message: Марксманская винтовка R17 ISASS "Мор" в аплинк.
+  - type: Add
+    message: Кейс для пистолета R8 "Гюрза"
+  - type: Add
+    message: Гипоспрей Горлекса получил респрайт
+  - type: Tweak
+    message: У пистолет R8 "Гюрза" увеличен разброс
