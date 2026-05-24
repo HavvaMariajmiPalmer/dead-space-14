@@ -1898,3 +1898,12 @@ Entries:
   changes:
   - type: Tweak
     message: Время спавна антагонистов в режим "выживание".
+- id: 174
+  author: RIP6100
+  time: '2026-05-24T07:21:10.146193+00:00'
+  pr: 1481
+  changes:
+  - type: Add
+    message: Вирусолог ЭПИЧЕСКОЕ возвращение на карту Train.
+  - type: Tweak
+    message: Шаттл НИО на карте Box был переделан.
