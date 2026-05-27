@@ -2063,3 +2063,10 @@ Entries:
     message: Баланс на карте Box
   - type: Remove
     message: Дисбаланс на карте Box
+- id: 195
+  author: IvanKuvalda
+  time: '2026-05-27T09:36:58.208577+00:00'
+  pr: 1523
+  changes:
+  - type: Add
+    message: Протокинетики в карготехмаг(у вас есть оружейка, зачем....).
