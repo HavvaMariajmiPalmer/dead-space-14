@@ -2356,3 +2356,12 @@ Entries:
   changes:
   - type: Add
     message: Отображение "итогов раунда" в манифест.
+- id: 228
+  author: IvanKuvalda
+  time: '2026-06-01T16:51:11.301277+00:00'
+  pr: 1575
+  changes:
+  - type: Tweak
+    message: Цена на вирусы в ящиках снижена
+  - type: Tweak
+    message: Фонарик у киборгов усилен
