@@ -132,8 +132,8 @@
     sprite: _DeadSpace/Clothing/Back/Tailbag/engineering.rsi
 
 - type: entity
-  parent: ClothingBackpackTailbagMedical
-  id: ClothingBackpackTailbagAtmospherics
+  parent: ClothingBackpackTailbag
+  id: ClothingBackpackTailbagMedical
   name: медицинский подсумок на хвост плафеимов
   description: Удобный подсумок на хвост. Стерилен
   components:
