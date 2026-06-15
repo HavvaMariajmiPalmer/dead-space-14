@@ -81,6 +81,11 @@
   equipment:
     jumpsuit: ClothingUniformSecurityTrooper
 
+- type: loadout
+  id: SeniorOfficerJumpskirtBlue
+  equipment:
+    jumpsuit: ClothingUniformJumpsuitSecBlue
+
 # DS14-start
 - type: loadout
   id: SecurityJumpsuitBlack

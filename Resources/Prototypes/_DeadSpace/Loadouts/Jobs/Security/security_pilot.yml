@@ -22,3 +22,9 @@
   id: SecurityPilotJumpsuit
   equipment:
     jumpsuit: ClothingUniformJumpsuitSecPilot
+
+- type: loadout
+  id: SeniorOfficerJumpskirtBlue
+  equipment:
+    jumpsuit: ClothingUniformJumpsuitSecBlue
+
