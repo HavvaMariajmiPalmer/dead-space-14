@@ -80,12 +80,7 @@
   id: TrooperUniform
   equipment:
     jumpsuit: ClothingUniformSecurityTrooper
-
-- type: loadout
-  id: SecurityJumpsuitBlue
-  equipment:
-    jumpsuit: ClothingUniformJumpsuitSecBlue
-
+ 
 # DS14-start
 - type: loadout
   id: SecurityJumpsuitBlack
@@ -96,8 +91,19 @@
   id: SecurityJumpskirtPencil
   equipment:
     jumpsuit: ClothingUniformJumpskirtPencilSec
+
+- type: loadout
+  id: SecurityJumpsuitSecBlue
+  equipment:
+    jumpsuit: ClothingUniformJumpsuitSecBlue
 # DS14 -end
 
+# Neck   # DS14
+- type: loadout
+  id: SeniorOfficerTieDet 
+  equipment: 
+    neck: ClothingNeckTieDet # DS14
+ 
 # - type: loadout
 #   id: SeniorOfficerJumpsuit
 #   effects:

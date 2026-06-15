@@ -72,6 +72,11 @@
   - !type:GroupLoadoutEffect
     proto: MasterSeniorOfficer
 
+- type: loadout
+  id: SeniorOfficerTieDet
+  equipment:
+    neck: ClothingNeckTieDet
+
 # Socks
 - type: loadout
   id: UnderwearSocksSeniorOfficer

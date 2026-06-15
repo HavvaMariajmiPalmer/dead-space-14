@@ -28,3 +28,9 @@
   equipment:
     jumpsuit: ClothingUniformJumpsuitSecBlue
 
+# Neck
+
+- type: loadout
+  id: SeniorOfficerTieDet
+  equipment:
+    neck: ClothingNeckTieDet
