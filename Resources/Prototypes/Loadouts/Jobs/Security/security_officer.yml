@@ -82,7 +82,7 @@
     jumpsuit: ClothingUniformSecurityTrooper
 
 - type: loadout
-  id: SeniorOfficerJumpskirtBlue
+  id: SecurityJumpsuitBlue
   equipment:
     jumpsuit: ClothingUniformJumpsuitSecBlue
 
