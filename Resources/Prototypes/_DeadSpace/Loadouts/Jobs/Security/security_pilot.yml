@@ -31,6 +31,6 @@
 # Neck
 
 - type: loadout
-  id: SeniorOfficerTieDet
+  id: SeniorityPilotTieDet
   equipment:
     neck: ClothingNeckTieDet

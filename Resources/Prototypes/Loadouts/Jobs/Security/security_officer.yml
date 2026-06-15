@@ -100,7 +100,7 @@
 
 # Neck   # DS14
 - type: loadout
-  id: SeniorOfficerTieDet 
+  id: SecurityNeckTieDet
   equipment: 
     neck: ClothingNeckTieDet # DS14
  
