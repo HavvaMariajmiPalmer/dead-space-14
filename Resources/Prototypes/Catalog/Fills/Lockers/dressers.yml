@@ -20,6 +20,7 @@
       - id: ClothingUnderwearBottomPantiesCaptain # DS14-Underwear
       - id: ClothingNeckMantleCap
       - id: ClothingOuterWinterCap
+      - id: ClothingBackpackTailbagCaptain # DS14-Tailbag
 
 - type: entity
   id: DresserChiefEngineerFilled
