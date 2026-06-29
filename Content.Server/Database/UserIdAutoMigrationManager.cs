@@ -29,6 +29,7 @@ public sealed class UserIdAutoMigrationManager
     [Dependency] private readonly UserDbDataManager _userDb = default!;
 
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _migrationLocks = new();
+    private readonly ConcurrentDictionary<Guid, byte> _completedMigrationUsers = new();
 
     private ISawmill _sawmill = default!;
     private bool _warnedMissingEndpoint;
@@ -60,6 +61,9 @@ public sealed class UserIdAutoMigrationManager
         if (!_cfg.GetCVar(CCVars.UserIdMigrationAutoEnabled))
             return null;
 
+        if (_completedMigrationUsers.ContainsKey(mkUserId.UserId))
+            return null;
+
         if (!TryBuildRequestUri(mkUserId.UserId, out var requestUri))
             return denyOnFailure ? AuthUnavailableMessage : null;
 
@@ -68,6 +72,9 @@ public sealed class UserIdAutoMigrationManager
 
         try
         {
+            if (_completedMigrationUsers.ContainsKey(mkUserId.UserId))
+                return null;
+
             var oldUserId = await QueryLinkedWizDenUserId(mkUserId.UserId, requestUri, cancel);
             if (oldUserId == null)
                 return null;
@@ -89,11 +96,12 @@ public sealed class UserIdAutoMigrationManager
                 return denyOnFailure ? MigrationBusyMessage : null;
             }
 
-            var report = await _db.ApplyUserIdMigrationAsync(oldUserId.Value, mkUserId.UserId, cancel);
+            var report = await _db.ApplyUserIdLoginMigrationAsync(oldUserId.Value, mkUserId.UserId, cancel);
             LogReport(report);
             if (!report.CanApply)
                 return denyOnFailure ? AuthUnavailableMessage : null;
 
+            _completedMigrationUsers.TryAdd(mkUserId.UserId, 0);
             return null;
         }
         catch (OperationCanceledException) when (!cancel.IsCancellationRequested)

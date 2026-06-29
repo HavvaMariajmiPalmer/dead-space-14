@@ -48,13 +48,19 @@ namespace Content.Server.Database
 
         #region User ID Migration
 
+        private enum UserIdMigrationMode
+        {
+            Login,
+            Full,
+        }
+
         public async Task<UserIdMigrationReport> DryRunUserIdMigrationAsync(
             Guid oldUserId,
             Guid newUserId,
             CancellationToken cancel = default)
         {
             await using var db = await GetDb(cancel);
-            return await BuildUserIdMigrationReportAsync(db.DbContext, oldUserId, newUserId, cancel);
+            return await BuildUserIdMigrationReportAsync(db.DbContext, oldUserId, newUserId, UserIdMigrationMode.Full, cancel);
         }
 
         public async Task<UserIdMigrationReport> ApplyUserIdMigrationAsync(
@@ -62,17 +68,34 @@ namespace Content.Server.Database
             Guid newUserId,
             CancellationToken cancel = default)
         {
+            return await ApplyUserIdMigrationAsync(oldUserId, newUserId, UserIdMigrationMode.Full, cancel);
+        }
+
+        public async Task<UserIdMigrationReport> ApplyUserIdLoginMigrationAsync(
+            Guid oldUserId,
+            Guid newUserId,
+            CancellationToken cancel = default)
+        {
+            return await ApplyUserIdMigrationAsync(oldUserId, newUserId, UserIdMigrationMode.Login, cancel);
+        }
+
+        private async Task<UserIdMigrationReport> ApplyUserIdMigrationAsync(
+            Guid oldUserId,
+            Guid newUserId,
+            UserIdMigrationMode mode,
+            CancellationToken cancel)
+        {
             await using var guard = await GetDb(cancel);
             await using var transaction = await guard.DbContext.Database.BeginTransactionAsync(cancel);
 
-            var report = await BuildUserIdMigrationReportAsync(guard.DbContext, oldUserId, newUserId, cancel);
+            var report = await BuildUserIdMigrationReportAsync(guard.DbContext, oldUserId, newUserId, mode, cancel);
             if (!report.CanApply)
                 return report;
 
             if (!report.HasOldData)
                 return report;
 
-            await ApplyUserIdMigrationCoreAsync(guard.DbContext, report, cancel);
+            await ApplyUserIdMigrationCoreAsync(guard.DbContext, report, mode, cancel);
             await guard.DbContext.SaveChangesAsync(cancel);
             await transaction.CommitAsync(cancel);
 
@@ -84,6 +107,7 @@ namespace Content.Server.Database
             ServerDbContext db,
             Guid oldUserId,
             Guid newUserId,
+            UserIdMigrationMode mode,
             CancellationToken cancel)
         {
             var report = new UserIdMigrationReport(oldUserId, newUserId);
@@ -106,12 +130,20 @@ namespace Content.Server.Database
                 report.Warnings.Add("External playtime service is registered but inactive; this command migrates the local game database only.");
             }
 
-            await AddTableCountAsync(
-                report,
-                "player",
-                () => db.Player.CountAsync(p => p.UserId == oldUserId, cancel),
-                () => db.Player.CountAsync(p => p.UserId == newUserId, cancel),
-                "merge old player record into MK player and remove the old record");
+            if (mode == UserIdMigrationMode.Login)
+            {
+                report.Warnings.Add("Automatic login migration skips large historical audit tables; run the full migration command later to rewrite connection logs, admin logs, notes and round history.");
+            }
+
+            if (mode == UserIdMigrationMode.Full)
+            {
+                await AddTableCountAsync(
+                    report,
+                    "player",
+                    () => db.Player.CountAsync(p => p.UserId == oldUserId, cancel),
+                    () => db.Player.CountAsync(p => p.UserId == newUserId, cancel),
+                    "merge old player record into MK player and remove the old record");
+            }
 
             await AddTableCountAsync(
                 report,
@@ -150,13 +182,6 @@ namespace Content.Server.Database
 
             await AddTableCountAsync(
                 report,
-                "admin_log_player",
-                () => db.AdminLogPlayer.CountAsync(p => p.PlayerUserId == oldUserId, cancel),
-                () => db.AdminLogPlayer.CountAsync(p => p.PlayerUserId == newUserId, cancel),
-                "move admin log player links and drop duplicate links");
-
-            await AddTableCountAsync(
-                report,
                 "whitelist",
                 () => db.Whitelist.CountAsync(p => p.UserId == oldUserId, cancel),
                 () => db.Whitelist.CountAsync(p => p.UserId == newUserId, cancel),
@@ -178,69 +203,10 @@ namespace Content.Server.Database
 
             await AddTableCountAsync(
                 report,
-                "connection_log",
-                () => db.ConnectionLog.CountAsync(p => p.UserId == oldUserId, cancel),
-                () => db.ConnectionLog.CountAsync(p => p.UserId == newUserId, cancel),
-                "rewrite historical connection logs");
-
-            await AddTableCountAsync(
-                report,
                 "play_time",
                 () => db.PlayTime.CountAsync(p => p.PlayerId == oldUserId, cancel),
                 () => db.PlayTime.CountAsync(p => p.PlayerId == newUserId, cancel),
                 "move playtime and sum duplicate trackers");
-
-            await AddTableCountAsync(
-                report,
-                "uploaded_resource_log",
-                () => db.UploadedResourceLog.CountAsync(p => p.UserId == oldUserId, cancel),
-                () => db.UploadedResourceLog.CountAsync(p => p.UserId == newUserId, cancel),
-                "rewrite uploaded resource logs");
-
-            await AddTableCountAsync(
-                report,
-                "admin_notes",
-                () => db.AdminNotes.CountAsync(p =>
-                    p.PlayerUserId == oldUserId ||
-                    p.CreatedById == oldUserId ||
-                    p.LastEditedById == oldUserId ||
-                    p.DeletedById == oldUserId, cancel),
-                () => db.AdminNotes.CountAsync(p =>
-                    p.PlayerUserId == newUserId ||
-                    p.CreatedById == newUserId ||
-                    p.LastEditedById == newUserId ||
-                    p.DeletedById == newUserId, cancel),
-                "rewrite note subject and audit user ids");
-
-            await AddTableCountAsync(
-                report,
-                "admin_watchlists",
-                () => db.AdminWatchlists.CountAsync(p =>
-                    p.PlayerUserId == oldUserId ||
-                    p.CreatedById == oldUserId ||
-                    p.LastEditedById == oldUserId ||
-                    p.DeletedById == oldUserId, cancel),
-                () => db.AdminWatchlists.CountAsync(p =>
-                    p.PlayerUserId == newUserId ||
-                    p.CreatedById == newUserId ||
-                    p.LastEditedById == newUserId ||
-                    p.DeletedById == newUserId, cancel),
-                "rewrite watchlist subject and audit user ids");
-
-            await AddTableCountAsync(
-                report,
-                "admin_messages",
-                () => db.AdminMessages.CountAsync(p =>
-                    p.PlayerUserId == oldUserId ||
-                    p.CreatedById == oldUserId ||
-                    p.LastEditedById == oldUserId ||
-                    p.DeletedById == oldUserId, cancel),
-                () => db.AdminMessages.CountAsync(p =>
-                    p.PlayerUserId == newUserId ||
-                    p.CreatedById == newUserId ||
-                    p.LastEditedById == newUserId ||
-                    p.DeletedById == newUserId, cancel),
-                "rewrite message subject and audit user ids");
 
             await AddTableCountAsync(
                 report,
@@ -251,31 +217,100 @@ namespace Content.Server.Database
 
             await AddTableCountAsync(
                 report,
-                "ban_admin_refs",
-                () => db.Ban.CountAsync(p => p.BanningAdmin == oldUserId || p.LastEditedById == oldUserId, cancel),
-                () => db.Ban.CountAsync(p => p.BanningAdmin == newUserId || p.LastEditedById == newUserId, cancel),
-                "rewrite ban author and editor refs");
-
-            await AddTableCountAsync(
-                report,
                 "ban_player",
                 () => db.BanPlayer.CountAsync(p => p.UserId == oldUserId, cancel),
                 () => db.BanPlayer.CountAsync(p => p.UserId == newUserId, cancel),
                 "move player ban selectors and drop duplicate selectors");
 
-            await AddTableCountAsync(
-                report,
-                "unban",
-                () => db.Unban.CountAsync(p => p.UnbanningAdmin == oldUserId, cancel),
-                () => db.Unban.CountAsync(p => p.UnbanningAdmin == newUserId, cancel),
-                "rewrite unban admin refs");
+            if (mode == UserIdMigrationMode.Full)
+            {
+                await AddTableCountAsync(
+                    report,
+                    "admin_log_player",
+                    () => db.AdminLogPlayer.CountAsync(p => p.PlayerUserId == oldUserId, cancel),
+                    () => db.AdminLogPlayer.CountAsync(p => p.PlayerUserId == newUserId, cancel),
+                    "move admin log player links and drop duplicate links");
 
-            await AddTableCountAsync(
-                report,
-                "player_round",
-                () => db.Round.CountAsync(r => r.Players.Any(p => p.UserId == oldUserId), cancel),
-                () => db.Round.CountAsync(r => r.Players.Any(p => p.UserId == newUserId), cancel),
-                "move round participation and drop duplicate round links");
+                await AddTableCountAsync(
+                    report,
+                    "connection_log",
+                    () => db.ConnectionLog.CountAsync(p => p.UserId == oldUserId, cancel),
+                    () => db.ConnectionLog.CountAsync(p => p.UserId == newUserId, cancel),
+                    "rewrite historical connection logs");
+
+                await AddTableCountAsync(
+                    report,
+                    "uploaded_resource_log",
+                    () => db.UploadedResourceLog.CountAsync(p => p.UserId == oldUserId, cancel),
+                    () => db.UploadedResourceLog.CountAsync(p => p.UserId == newUserId, cancel),
+                    "rewrite uploaded resource logs");
+
+                await AddTableCountAsync(
+                    report,
+                    "admin_notes",
+                    () => db.AdminNotes.CountAsync(p =>
+                        p.PlayerUserId == oldUserId ||
+                        p.CreatedById == oldUserId ||
+                        p.LastEditedById == oldUserId ||
+                        p.DeletedById == oldUserId, cancel),
+                    () => db.AdminNotes.CountAsync(p =>
+                        p.PlayerUserId == newUserId ||
+                        p.CreatedById == newUserId ||
+                        p.LastEditedById == newUserId ||
+                        p.DeletedById == newUserId, cancel),
+                    "rewrite note subject and audit user ids");
+
+                await AddTableCountAsync(
+                    report,
+                    "admin_watchlists",
+                    () => db.AdminWatchlists.CountAsync(p =>
+                        p.PlayerUserId == oldUserId ||
+                        p.CreatedById == oldUserId ||
+                        p.LastEditedById == oldUserId ||
+                        p.DeletedById == oldUserId, cancel),
+                    () => db.AdminWatchlists.CountAsync(p =>
+                        p.PlayerUserId == newUserId ||
+                        p.CreatedById == newUserId ||
+                        p.LastEditedById == newUserId ||
+                        p.DeletedById == newUserId, cancel),
+                    "rewrite watchlist subject and audit user ids");
+
+                await AddTableCountAsync(
+                    report,
+                    "admin_messages",
+                    () => db.AdminMessages.CountAsync(p =>
+                        p.PlayerUserId == oldUserId ||
+                        p.CreatedById == oldUserId ||
+                        p.LastEditedById == oldUserId ||
+                        p.DeletedById == oldUserId, cancel),
+                    () => db.AdminMessages.CountAsync(p =>
+                        p.PlayerUserId == newUserId ||
+                        p.CreatedById == newUserId ||
+                        p.LastEditedById == newUserId ||
+                        p.DeletedById == newUserId, cancel),
+                    "rewrite message subject and audit user ids");
+
+                await AddTableCountAsync(
+                    report,
+                    "ban_admin_refs",
+                    () => db.Ban.CountAsync(p => p.BanningAdmin == oldUserId || p.LastEditedById == oldUserId, cancel),
+                    () => db.Ban.CountAsync(p => p.BanningAdmin == newUserId || p.LastEditedById == newUserId, cancel),
+                    "rewrite ban author and editor refs");
+
+                await AddTableCountAsync(
+                    report,
+                    "unban",
+                    () => db.Unban.CountAsync(p => p.UnbanningAdmin == oldUserId, cancel),
+                    () => db.Unban.CountAsync(p => p.UnbanningAdmin == newUserId, cancel),
+                    "rewrite unban admin refs");
+
+                await AddTableCountAsync(
+                    report,
+                    "player_round",
+                    () => db.Round.CountAsync(r => r.Players.Any(p => p.UserId == oldUserId), cancel),
+                    () => db.Round.CountAsync(r => r.Players.Any(p => p.UserId == newUserId), cancel),
+                    "move round participation and drop duplicate round links");
+            }
 
             if (await db.Preference.AnyAsync(p => p.UserId == oldUserId, cancel) &&
                 await db.Preference.AnyAsync(p => p.UserId == newUserId, cancel))
@@ -316,6 +351,7 @@ namespace Content.Server.Database
         private static async Task ApplyUserIdMigrationCoreAsync(
             ServerDbContext db,
             UserIdMigrationReport report,
+            UserIdMigrationMode mode,
             CancellationToken cancel)
         {
             var oldUserId = report.OldUserId;
@@ -327,13 +363,17 @@ namespace Content.Server.Database
             await MergeAdminsAsync(db, report, oldUserId, newUserId, cancel);
             await MergeSimpleUserTablesAsync(db, report, oldUserId, newUserId, cancel);
             await MergePlayTimeAsync(db, oldUserId, newUserId, cancel);
-            await MoveAdminLogPlayersAsync(db, oldUserId, newUserId, cancel);
             await MoveRoleWhitelistsAsync(db, oldUserId, newUserId, cancel);
             await MoveBanPlayersAsync(db, oldUserId, newUserId, cancel);
-            await MovePlayerForeignKeysAsync(db, oldUserId, newUserId, cancel);
-            await MergePlayerRoundsAsync(oldPlayer, newPlayer);
 
-            if (oldPlayer != null)
+            if (mode == UserIdMigrationMode.Full)
+            {
+                await MoveAdminLogPlayersAsync(db, oldUserId, newUserId, cancel);
+                await MovePlayerForeignKeysAsync(db, oldUserId, newUserId, cancel);
+                await MergePlayerRoundsAsync(oldPlayer, newPlayer);
+            }
+
+            if (oldPlayer != null && mode == UserIdMigrationMode.Full)
                 db.Player.Remove(oldPlayer);
         }
 

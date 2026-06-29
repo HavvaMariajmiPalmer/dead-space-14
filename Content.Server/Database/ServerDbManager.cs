@@ -166,6 +166,11 @@ namespace Content.Server.Database
             Guid oldUserId,
             Guid newUserId,
             CancellationToken cancel = default);
+
+        Task<UserIdMigrationReport> ApplyUserIdLoginMigrationAsync(
+            Guid oldUserId,
+            Guid newUserId,
+            CancellationToken cancel = default);
         #endregion
 
         #region Connection Logs
@@ -624,6 +629,15 @@ namespace Content.Server.Database
         {
             DbWriteOpsMetric.Inc();
             return RunDbCommand(() => _db.ApplyUserIdMigrationAsync(oldUserId, newUserId, cancel));
+        }
+
+        public Task<UserIdMigrationReport> ApplyUserIdLoginMigrationAsync(
+            Guid oldUserId,
+            Guid newUserId,
+            CancellationToken cancel = default)
+        {
+            DbWriteOpsMetric.Inc();
+            return RunDbCommand(() => _db.ApplyUserIdLoginMigrationAsync(oldUserId, newUserId, cancel));
         }
 
         public Task<int> AddConnectionLogAsync(

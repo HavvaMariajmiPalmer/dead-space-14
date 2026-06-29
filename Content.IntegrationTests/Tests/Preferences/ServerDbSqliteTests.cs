@@ -374,6 +374,80 @@ namespace Content.IntegrationTests.Tests.Preferences
             await pair.CleanReturnAsync();
         }
 
+        [Test]
+        public async Task TestUserIdLoginMigrationSkipsHistoricalRows()
+        {
+            var pair = await PoolManager.GetServerClient();
+            var db = GetDb(pair.Server);
+
+            var oldUser = new NetUserId(new Guid("c91bb5c1-7240-4f4b-9f8b-ef35ca7563a8"));
+            var newUser = new NetUserId(new Guid("8145a12f-ac2b-4e98-88c9-361c02da6c2a"));
+
+            await db.UpdatePlayerRecord(oldUser, "OldLoginUser", IPAddress.Loopback, null);
+            await db.UpdatePlayerRecord(newUser, "NewLoginUser", IPAddress.Parse("127.0.0.3"), null);
+            await db.InitPrefsAsync(oldUser, CharlieCharlieson());
+            await db.AddToWhitelistAsync(oldUser);
+            await db.AddAdminAsync(new Admin
+            {
+                UserId = oldUser.UserId,
+                Suspended = true,
+                Flags =
+                [
+                    new AdminFlag { Flag = "Ban" },
+                ],
+            }, CancellationToken.None);
+
+            var job = new ProtoId<JobPrototype>("Captain");
+            Assert.That(await db.AddJobWhitelist(oldUser.UserId, job), Is.True);
+            await db.UpdatePlayTimes([
+                new PlayTimeUpdate(oldUser, "Overall", TimeSpan.FromMinutes(7)),
+            ]);
+
+            var (server, _) = await db.AddOrGetServer("login-migration-test");
+            var roundId = await db.AddNewRound(server, oldUser.UserId);
+            var noteId = await db.AddAdminNote(new AdminNote
+            {
+                PlayerUserId = oldUser.UserId,
+                CreatedById = oldUser.UserId,
+                PlaytimeAtNote = TimeSpan.FromMinutes(3),
+                Message = "historical note",
+                Severity = NoteSeverity.Medium,
+                CreatedAt = DateTime.UtcNow,
+                LastEditedAt = DateTime.UtcNow,
+            });
+
+            var applied = await db.ApplyUserIdLoginMigrationAsync(oldUser.UserId, newUser.UserId);
+            Assert.That(applied.Applied, Is.True);
+            Assert.That(applied.Tables.Select(table => table.Name), Does.Not.Contain("connection_log"));
+            Assert.That(applied.Tables.Select(table => table.Name), Does.Not.Contain("admin_notes"));
+            Assert.That(applied.Tables.Select(table => table.Name), Does.Not.Contain("player_round"));
+
+            Assert.That(await db.GetPlayerRecordByUserId(oldUser, CancellationToken.None), Is.Not.Null);
+            Assert.That(await db.GetPlayerRecordByUserId(newUser, CancellationToken.None), Is.Not.Null);
+            Assert.That(await db.GetPlayerPreferencesAsync(oldUser), Is.Null);
+            Assert.That(await db.GetPlayerPreferencesAsync(newUser), Is.Not.Null);
+            Assert.That(await db.GetWhitelistStatusAsync(oldUser), Is.False);
+            Assert.That(await db.GetWhitelistStatusAsync(newUser), Is.True);
+            Assert.That(await db.GetAdminDataForAsync(oldUser, CancellationToken.None), Is.Null);
+            Assert.That(await db.GetAdminDataForAsync(newUser, CancellationToken.None), Is.Not.Null);
+            Assert.That(await db.GetJobWhitelists(oldUser.UserId, CancellationToken.None), Is.Empty);
+            Assert.That(await db.GetJobWhitelists(newUser.UserId, CancellationToken.None), Has.One.EqualTo("Captain"));
+            Assert.That((await db.GetPlayTimes(newUser.UserId, CancellationToken.None)).Single().TimeSpent, Is.EqualTo(TimeSpan.FromMinutes(7)));
+            Assert.That(await db.GetPlayTimes(oldUser.UserId, CancellationToken.None), Is.Empty);
+
+            var historicalNote = await db.GetAdminNote(noteId);
+            Assert.That(historicalNote!.Player!.UserId, Is.EqualTo(oldUser));
+            Assert.That(historicalNote.CreatedBy!.UserId, Is.EqualTo(oldUser));
+            var historicalRound = await db.GetRound(roundId);
+            Assert.That(historicalRound.Players.Select(player => player.UserId), Is.EquivalentTo(new[] { oldUser.UserId }));
+
+            var secondApply = await db.ApplyUserIdLoginMigrationAsync(oldUser.UserId, newUser.UserId);
+            Assert.That(secondApply.Applied, Is.False);
+            Assert.That(secondApply.HasOldData, Is.False);
+
+            await pair.CleanReturnAsync();
+        }
+
         private static NetUserId NewUserId()
         {
             return new(Guid.NewGuid());
