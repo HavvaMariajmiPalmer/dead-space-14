@@ -3946,3 +3946,10 @@ Entries:
     message: Ошибки локализации.
   - type: Fix
     message: Произношение слова "ЧВК" ТТСом. Ангор frvr.
+- id: 393
+  author: IvanKuvalda
+  time: '2026-06-29T14:15:51.522892+00:00'
+  pr: 1853
+  changes:
+  - type: Add
+    message: Новый планшет отрядов для ГСБ.
