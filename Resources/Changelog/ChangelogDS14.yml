@@ -4053,3 +4053,11 @@ Entries:
   changes:
   - type: Fix
     message: ТЭГ теперь не может сломаться в ходе геймрула BrokenTechEvent
+- id: 404
+  author: CatBackG
+  time: '2026-07-01T15:44:00.198610+00:00'
+  pr: 1867
+  changes:
+  - type: Tweak
+    message: Полномасштабная переработка капитана. Экипировка и частично баланс. Лодаут
+      и Шкаф.
