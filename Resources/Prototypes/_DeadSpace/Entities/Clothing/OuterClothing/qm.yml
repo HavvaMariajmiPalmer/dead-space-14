@@ -5,8 +5,8 @@
   description: Его имя мидас. Это скафандр квартирмейстера.
   components:
   - type: Sprite
-    sprite: Clothing/OuterClothing/Hardsuits/qm.rsi
+    sprite: _DeadSpace/Clothing/OuterClothing/Hardsuits/qm.rsi
   - type: Clothing
-    sprite: Clothing/OuterClothing/Hardsuits/qm.rsi
+    sprite: _DeadSpace/Clothing/OuterClothing/Hardsuits/qm.rsi
   - type: ToggleableClothing
     clothingPrototype: ClothingHeadHelmetHardsuitQM
